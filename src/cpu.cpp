@@ -13,7 +13,13 @@ uint32_t cpu_instruction_counter = 0;
 void* cpu_current_instruction_execute = nullptr;
 uint8_t cpu_halt_count = 0; // 0 == not halted, 1 == halt instruction, 2 == stop instruction
 bool cpu_halt_bug = false;
-bool cpu_debug_instructions = true;
+bool cpu_debug_instructions = false;
+
+void cpu_start_debug()
+{
+	cpu_instruction_counter = 0;
+	cpu_debug_instructions = true;
+}
 
 void cpu_reset()
 {
@@ -39,7 +45,7 @@ void cpu_tick()
 		core_advance_cpu_clocks(4); // Halted, waiting for an interrupt to trigger
 	}
 
-	if (cpu_instruction_counter > 10000 && cpu_debug_instructions)
+	if (cpu_instruction_counter > 100000 && cpu_debug_instructions)
 	{
 		cpu_debug_instructions = false;
 		debug_log_close_file();
@@ -1653,7 +1659,7 @@ void cpu_rst_28() // 0xEF
 	cpu_routine_rst_nnnn(0x0028);
 }
 
-void cpu_ldh_a_n()
+void cpu_ldh_a_n() // 0xF0
 {
 	core_advance_cpu_clocks(4);
 	uint32_t temp = 0xFF00 + (uint32_t)memory_bus_read(cpu_registers.pc++);

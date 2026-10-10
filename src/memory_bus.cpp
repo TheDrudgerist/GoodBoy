@@ -3,6 +3,8 @@
 #include "cart_type.h"
 #include "timer.h"
 #include "interrupts.h"
+#include "ppu.h"
+#include "joypad.h"
 #include <stdio.h>
 
 uint8_t memory[MEMORY_SIZE];
@@ -38,6 +40,10 @@ uint8_t memory_bus_read(const uint16_t addr)
 	}
 	if (addr >= 0x8000 && addr <= 0x9FFF) // VRAM
 	{
+		if (LCDS_PPU_MODE == LCDS_MODE_3_DRAWING)
+		{
+			return 0xFF;
+		}
 		return memory[addr];
 	}
 	if (addr >= 0xA000 && addr <= 0xBFFF) // External RAM
@@ -68,16 +74,27 @@ uint8_t memory_bus_read(const uint16_t addr)
 	}
 	if (addr >= 0xFE00 && addr <= 0xFE9F) // Object Attribute Memory (sprite attribute table)
 	{
-		// TODO: If PPU mode == 2 return 0xFF
+		if (LCDS_PPU_MODE == LCDS_MODE_2_OAM_SEARCH ||
+			LCDS_PPU_MODE == LCDS_MODE_3_DRAWING)
+		{
+			return 0xFF;
+		}
 		return memory[addr];
 	}
 	if (addr >= 0xFEA0 && addr <= 0xFEFF) // Unused memory area
 	{
-		// TODO: return 0xFF if PPU is in mode 3
+		if (LCDS_PPU_MODE == LCDS_MODE_3_DRAWING)
+		{
+			return 0xFF;
+		}
 		return 0x00;
 	}
 	if (addr >= 0xFF00 && addr <= 0xFF7F) // I/O registers
 	{
+		if (addr == 0xFF00) // Joypad
+		{
+			return joypad_read_input();
+		}
 		return memory[addr];
 	}
 	if (addr >= 0xFF80 && addr <= 0xFFFE) // High RAM
@@ -128,7 +145,10 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 
 	if (addr >= 0x8000 && addr <= 0x9FFF) // VRAM
 	{
-		// TODO: If PPU is in mode 3 the cpu cannot access VRAM
+		if (LCDS_PPU_MODE == LCDS_MODE_3_DRAWING)
+		{
+			return;
+		}
 		memory[addr] = value;
 	}
 	if (addr >= 0xA000 && addr <= 0xBFFF) // ERAM
@@ -160,7 +180,11 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 	}
 	if (addr >= 0xFE00 && addr <= 0xFE9F) // OAM Data
 	{
-		// TODO: If PPU is in mode 2 or 3 the CPU cannot access OAM
+		if (LCDS_PPU_MODE == LCDS_MODE_2_OAM_SEARCH ||
+			LCDS_PPU_MODE == LCDS_MODE_3_DRAWING)
+		{
+			return;
+		}
 		memory[addr] = value;
 	}
 	if (addr >= 0xFEA0 && addr <= 0xFEFF) // Unused memory area
@@ -169,7 +193,11 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 	}
 	if (addr >= 0xFF00 && addr <= 0xFF7F) // I/O registers
 	{
-		if (addr == 0xFF02 && value == 0x81) // Blargg tests serial output
+		if (addr == 0xFF00)
+		{
+			joypad_write_input(value);
+		}
+		else if (addr == 0xFF02 && value == 0x81) // Blargg tests serial output
 		{
 			char c = memory[0xFF01];
 			printf("%c", c);
@@ -186,6 +214,18 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 		{
 			interrupt_flag_write(value);
 		}
+		else if (addr == 0xFF40)
+		{
+			ppu_on_lcd_control_write(value);
+		}
+		else if (addr == 0xFF41)
+		{
+			ppu_on_lcd_status_write(value);
+		}
+		else if (addr == 0xFF45)
+		{
+			ppu_on_lyc_write(value);
+		}
 		else if (addr == 0xFF46) // OAM DMA
 		{
 			uint16_t source_addr = (value * 0x100);
@@ -194,6 +234,11 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 			{
 				memory[dest + i] = memory_bus_read(source_addr + i);
 			}
+		}
+		else if (addr >= 0xFF47 && addr <= 0xFF49)
+		{
+			memory[addr] = value;
+			ppu_on_palette_write(addr);
 		}
 		else
 		{
