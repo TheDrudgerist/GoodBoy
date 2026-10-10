@@ -14,7 +14,6 @@ const uint32_t CPU_FRAME_TIME_NS = 1.0 / 60.0 * 1000000000;
 gfx_context* gfx_debug_ctx = nullptr;
 gfx_context* gfx_render_ctx = nullptr;
 
-uint32_t core_clock_counter = 0;
 bool core_quit_requested = false;
 std::chrono::steady_clock::time_point core_time_frame_begin;
 
@@ -113,8 +112,6 @@ void core_advance_cpu_clocks(uint8_t clocks)
 {
     timer_advance_clocks(clocks);
     ppu_advance_clocks(clocks);
-
-    core_clock_counter += clocks;
 
     if (interrupt_enable_ime_delay > 0)
     {
