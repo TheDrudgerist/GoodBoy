@@ -5,6 +5,7 @@
 #include "interrupts.h"
 #include "ppu.h"
 #include "joypad.h"
+#include "apu.h"
 #include <stdio.h>
 
 uint8_t memory[MEMORY_SIZE];
@@ -94,6 +95,10 @@ uint8_t memory_bus_read(const uint16_t addr)
 		if (addr == 0xFF00) // Joypad
 		{
 			return joypad_read_input();
+		}
+		else if (addr >= 0xFF10 && addr <= 0xFF3F) // Audio registers
+		{
+			return apu_read(addr);
 		}
 		return memory[addr];
 	}
@@ -213,6 +218,10 @@ void memory_bus_write(const uint16_t addr, const uint8_t value)
 		else if (addr == 0xFF0F)
 		{
 			interrupt_flag_write(value);
+		}
+		else if (addr >= 0xFF10 && addr <= 0xFF3F) // Audio registers
+		{
+			apu_write(addr, value);
 		}
 		else if (addr == 0xFF40)
 		{

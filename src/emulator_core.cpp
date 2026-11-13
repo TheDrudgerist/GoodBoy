@@ -7,6 +7,7 @@
 #include "ppu.h"
 #include "memory_bus.h"
 #include "joypad.h"
+#include "apu.h"
 #include <chrono>
 #include <thread>
 
@@ -23,7 +24,7 @@ void core_sleep_until(std::chrono::high_resolution_clock::time_point targetTime)
 
 int core_init()
 {
-    if (!SDL_Init(SDL_INIT_VIDEO))
+    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO))
     {
         return -1;
     }
@@ -39,6 +40,7 @@ int core_init()
 
     ppu_init();
     timer_init();
+    apu_init();
 
 	return 0;
 }
@@ -48,6 +50,7 @@ void core_run()
     memset(memory, 0, MEMORY_SIZE);
     cpu_reset();
     ppu_reset();
+    apu_reset();
 
     core_time_frame_begin = std::chrono::high_resolution_clock::now();
 
@@ -59,6 +62,8 @@ void core_run()
 
 void core_shutdown()
 {
+    apu_shutdown();
+
     gfx_destroy(gfx_render_ctx);
     gfx_destroy(gfx_debug_ctx);
 
@@ -112,6 +117,7 @@ void core_advance_cpu_clocks(uint8_t clocks)
 {
     timer_advance_clocks(clocks);
     ppu_advance_clocks(clocks);
+    apu_tick(clocks);
 
     if (interrupt_enable_ime_delay > 0)
     {
@@ -130,11 +136,11 @@ void core_advance_cpu_clocks(uint8_t clocks)
 void core_init_gfx_contexts()
 {
     const SDL_Color COLOR_BLACK = { 0, 0, 0, 0 };
-
+#if CORE_RENDER_PPU_DEBUG || CORE_RENDER_APU_DEBUG
     gfx_debug_ctx = gfx_init(512, 512, "Debug");
     gfx_clear(gfx_debug_ctx, COLOR_BLACK);
     gfx_update(gfx_debug_ctx);
-
+#endif
     gfx_render_ctx = gfx_init(LCD_PIXELS_WIDTH * PPU_RENDER_SCALE, LCD_PIXELS_HEIGHT * PPU_RENDER_SCALE, "GoodBoy");
     gfx_clear(gfx_render_ctx, COLOR_BLACK);
     gfx_update(gfx_render_ctx);

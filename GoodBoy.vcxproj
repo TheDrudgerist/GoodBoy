@@ -147,6 +147,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\apu.cpp" />
     <ClCompile Include="src\cart.cpp" />
     <ClCompile Include="src\cpu.cpp" />
     <ClCompile Include="src\cpu_instructions.cpp" />
@@ -161,6 +162,7 @@
     <ClCompile Include="src\timer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\apu.h" />
     <ClInclude Include="src\cart.h" />
     <ClInclude Include="src\cart_type.h" />
     <ClInclude Include="src\cpu.h" />

@@ -48,6 +48,7 @@ const SDL_Color ppu_gb_colors[4] = {
 	{ 40, 44, 4, 255 },
 };
 
+#if CORE_RENDER_PPU_DEBUG
 const SDL_Color ppu_gb_colors_grey[4] = {
 	{ 200, 200, 200, 255 },
 	{ 145, 145, 145, 255 },
@@ -71,6 +72,7 @@ uint16_t ppu_clocks_spent_in_mode0[154] = { 0 };
 uint16_t ppu_clocks_spent_in_mode1[154] = { 0 };
 uint16_t ppu_clocks_spent_in_mode2[154] = { 0 };
 uint16_t ppu_clocks_spent_in_mode3[154] = { 0 };
+#endif
 
 void ppu_oam_search_tick();
 void ppu_fetcher_tick();
@@ -118,7 +120,9 @@ void ppu_advance_clocks(const uint8_t clocks)
 			{
 				ppu_set_lcd_mode(LCDS_MODE_3_DRAWING);
 				ppu_discard_pixels = ppu_lcd_registers->scx % 8;
+#if CORE_RENDER_PPU_DEBUG
 				ppu_clocks_spent_in_mode2[ppu_lcd_registers->ly] = ppu_scanline_dot;
+#endif
 			}
 		}
 		else if (ppu_mode == LCDS_MODE_3_DRAWING)
@@ -127,7 +131,9 @@ void ppu_advance_clocks(const uint8_t clocks)
 			ppu_shifter_tick();
 			if (LCDS_PPU_MODE != LCDS_MODE_3_DRAWING)
 			{
+#if CORE_RENDER_PPU_DEBUG
 				ppu_clocks_spent_in_mode3[ppu_lcd_registers->ly] = ppu_scanline_dot;
+#endif
 				continue;
 			}
 		}
@@ -149,7 +155,9 @@ void ppu_advance_clocks(const uint8_t clocks)
 			}
 			if (ppu_scanline_dot == 455)
 			{
+#if CORE_RENDER_PPU_DEBUG
 				ppu_clocks_spent_in_mode0[ppu_lcd_registers->ly] = ppu_scanline_dot;
+#endif
 				ppu_scanline_dot = 0;
 				ppu_lcd_registers->ly++;
 				ppu_check_ly_compare();
@@ -169,7 +177,9 @@ void ppu_advance_clocks(const uint8_t clocks)
 		{
 			if (ppu_scanline_dot == 455)
 			{
+#if CORE_RENDER_PPU_DEBUG
 				ppu_clocks_spent_in_mode1[ppu_lcd_registers->ly] = ppu_scanline_dot;
+#endif
 				ppu_scanline_dot = 0;
 				ppu_lcd_registers->ly++;
 				ppu_check_ly_compare();
@@ -177,7 +187,9 @@ void ppu_advance_clocks(const uint8_t clocks)
 				{
 					ppu_lcd_registers->ly = 0;
 					render_frame();
+#if CORE_RENDER_PPU_DEBUG
 					render_debug();
+#endif
 					ppu_set_lcd_mode(LCDS_MODE_2_OAM_SEARCH);
 					ppu_first_frame_after_lcd_enable = false;
 
@@ -331,6 +343,7 @@ void render_frame()
 	memset(frame_pixels, 0, LCD_PIXELS_WIDTH * LCD_PIXELS_HEIGHT);
 }
 
+#if CORE_RENDER_PPU_DEBUG
 void render_debug_vram(void* pixels, int pitch);
 void render_debug_background(void* pixels, int pitch);
 void render_debug_sprites(void* pixels, int pitch);
@@ -359,6 +372,7 @@ void render_debug()
 
 	SDL_RenderPresent(gfx_debug_ctx->renderer);
 }
+#endif
 
 void extract_palette(uint16_t address, uint8_t* palette)
 {
@@ -601,6 +615,7 @@ void ppu_shifter_tick()
 	}
 }
 
+#if CORE_RENDER_PPU_DEBUG
 void render_debug_vram(void* pixels, int pitch)
 {
 	const uint8_t* tile_data = memory + 0x8000;
@@ -917,3 +932,4 @@ void render_debug_timing(void* pixels)
 		}
 	}
 }
+#endif

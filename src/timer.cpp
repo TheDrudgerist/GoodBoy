@@ -1,6 +1,7 @@
 #include "timer.h"
 #include "memory_bus.h"
 #include "interrupts.h"
+#include "apu.h"
 
 extern uint8_t cpu_halt_count;
 
@@ -31,7 +32,7 @@ void timer_check_clock_edges(const uint16_t prev_sysclk)
 	const bool div_bit_4_now = (timer_registers->timer_div >> 4) & 1;
 	if (div_bit_4_prev && !div_bit_4_now) // falling edge on div bit 4
 	{
-		// TODO: Tick APU counter here
+		apu_counter_tick();
 	}
 
 	const bool tac_timer_enable = CHECK_BIT(timer_registers->timer_tac, 2);
